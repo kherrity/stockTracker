@@ -7,6 +7,8 @@ import time
 import datetime
 from pytz import timezone
 
+stopLoop = 0  ## controls the main loop
+
 def sendText(number, message):
     texturl = 'http://www.onlinetextmessage.com/send.php'
     prov = '41'
@@ -46,10 +48,18 @@ def getEstTime():
     #print est_time.strftime("%a, %d %b %Y %X")
     return est_time
 
+def stop():
+    global stopLoop
+    stopLoop = 1
+
 def main(argv):
+    global stopLoop
+    stopLoop = 0
     number = ''
     pThres = ''
     stocks = ''
+
+    print "stopLoop: %d" % stopLoop
 
     try:
         opts, args = getopt.getopt(argv[1:], "hs:n:p:")
@@ -61,12 +71,15 @@ def main(argv):
             print argv[0] + ' -s <ticker symbol(s)> -n <phone #> -p <percent increase>'
             sys.exit()
         elif opt == '-s':
-            stocks = arg
-            stocks.replace(' ','') ## eliminate whitespace
-            stocks = stocks.split(',')
+            stocks = arg.replace(' ',',').split(',') ## eliminate whitespace
+            print stocks
             stocks = filter(None, stocks)
         elif opt == '-p':
-            pThres = float(arg)
+            if arg:
+                pThres = float(arg)
+            else:
+                print 'Invalid option.\n'
+                sys.exit(2)
         elif opt == '-n':
             number = arg
         else:
@@ -78,27 +91,26 @@ def main(argv):
         sys.exit(2)
 
     sgn = 1
-    loopPeriod = 3600 #1 hour period
+    loopPeriod = 10 #1 hour period
     marketCloseReported = False
 
     D = {}
     for s in stocks:
         D[s] = 0
 
-    while True:
-
+    while not stopLoop:
         # Is the NYSE open?
-        if isMarketClosed():
-            if not marketCloseReported:
-                print "Market closed..."
-                marketCloseReported = True
-            time.sleep(600) # sleep 10 min
-            continue
-        else:
-            marketCloseReported = False
-            est_time = getEstTime()
-            if est_time.hour <= 10:
-                print "MARKET OPEN!"
+#        if isMarketClosed():
+#            if not marketCloseReported:
+#                print "Market closed..."
+#                marketCloseReported = True
+#            time.sleep(600) # sleep 10 min
+#            continue
+#        else:
+#            marketCloseReported = False
+#            est_time = getEstTime()
+#            if est_time.hour <= 10:
+#                print "MARKET OPEN!"
        
         message = ''
         for stock in stocks:
@@ -129,7 +141,6 @@ def main(argv):
                 p = sgn * float(s[lparen+1:rparen-1])
                 if p > pThres and p > D[stock]:
                     D[stock] = p
-                    # send text
                     message += '| ' + stock.upper() + \
                       " has increased by " + str(p) + "% |"
                 else:
@@ -137,9 +148,11 @@ def main(argv):
 
         if message:
             print message
-            sendText(number, message)
+            #sendText(number, message) ## send sms text message
         # loop delay
         print "sleeping for " + str(loopPeriod) + " seconds"
+        if stopLoop:
+            break
         time.sleep(loopPeriod)
 
 if __name__ == "__main__":
