@@ -14,9 +14,9 @@ def sendText(number, message):
     prov = '41'
     values = {'code' : '',
         'number' : number,
-        'from' : 'k@junk.com',
+        'from' : 'k@k.com',
         'remember' : 'n',
-        'subject' : 'Stocks',
+        'subject' : 'stocks',
         'carrier' : prov,
         'quicktext' : '',
         'message' : message,
@@ -90,8 +90,17 @@ def main(argv):
         print 'Usage: ' + argv[0] + ' -s <ticker symbol(s)> -n <phone #> -p <percent increase>'
         sys.exit(2)
 
+    # Original stock purchases
+    Dorig = {}
+    Dorig['ssys'] = [(10,88.97),(10,94.99)]
+    Dorig['s'] = [(75,6.13)] 
+    Dorig['dnkn'] = [(6,43.49)]
+    Dorig['aapl'] = [(1,506.93)]
+
+    v_orig = sum([n*c for key in Dorig for (n,c) in Dorig[key]])
+    print "Total purchase value: %.2f" % v_orig
     sgn = 1
-    loopPeriod = 10 #1 hour period
+    loopPeriod = 3600 #1 hour period
     marketCloseReported = False
 
     D = {}
@@ -99,25 +108,39 @@ def main(argv):
         D[s] = 0
 
     while not stopLoop:
+        print "stopLoop = %d" % stopLoop
         # Is the NYSE open?
-#        if isMarketClosed():
-#            if not marketCloseReported:
-#                print "Market closed..."
-#                marketCloseReported = True
-#            time.sleep(600) # sleep 10 min
-#            continue
-#        else:
-#            marketCloseReported = False
-#            est_time = getEstTime()
-#            if est_time.hour <= 10:
-#                print "MARKET OPEN!"
+        if isMarketClosed():
+            if not marketCloseReported:
+                print "Market closed..."
+                marketCloseReported = True
+            time.sleep(600) # sleep 10 min
+            continue
+        else:
+            marketCloseReported = False
+            est_time = getEstTime()
+            if est_time.hour <= 10:
+                print "MARKET OPEN!"
        
         message = ''
         for stock in stocks:
             url = 'http://finance.yahoo.com/q?s=' + stock
             html_content = urllib2.urlopen(url).read()
 
-            # get third arrow (which represents the stock price)
+            # get stock price
+            i = html_content.find('('+stock.upper()+')')
+            i = html_content.find(stock.lower()+'">', i+1)
+            rb = html_content.find('>',i+1)
+            lb = html_content.find('<',rb+1)
+            stock_price = float(html_content[rb+1:lb])
+
+            # compute net gain/loss for stock (if we own it)
+            if stock in Dorig:
+                nshares = sum([n for (n,c) in Dorig[stock]])
+                gl = nshares * stock_price - sum([n*c for (n,c) in Dorig[stock]]) 
+                netgl += gl
+
+            # get third arrow (which represents the stock price % change)
             narrow = 0
             idx = 0
             while narrow < 3:
@@ -141,14 +164,18 @@ def main(argv):
                 p = sgn * float(s[lparen+1:rparen-1])
                 if p > pThres and p > D[stock]:
                     D[stock] = p
-                    message += '| ' + stock.upper() + \
-                      " has increased by " + str(p) + "% |"
+
+                    message += '|' + stock.upper() + \
+                            " up " + str(p) + "%% <G/L:$%.2f>|" % gl
                 else:
                     print stock.upper() + " percent change (%.2f) not bigger than threshold (%.2f)" % (p, pThres)
 
+
+        print "net g/l = $%.2f" % netgl
         if message:
+            message += "Net G/L: $%.2f" % netgl
             print message
-            #sendText(number, message) ## send sms text message
+            sendText(number, message) ## send sms text message
         # loop delay
         print "sleeping for " + str(loopPeriod) + " seconds"
         if stopLoop:

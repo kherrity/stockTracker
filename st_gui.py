@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 from Tkinter import *
+import tkMessageBox
 import threading
 import stockTracker
 
@@ -22,6 +23,10 @@ l3.pack(fill=X)
 e3 = Entry(top, bd=5)
 e3.pack(fill=X)
 
+def onClose():
+    stockTracker.stop()
+    top.destroy()
+
 def callback_run():
     number = e1.get()
     stocks = e2.get()
@@ -36,25 +41,14 @@ def callback_run():
     # grey out 'Run' button
     b_run.config(state=DISABLED)
 
-    print "Running..."
-    #text = Text(top, bd=5)
-    #text.insert(INSERT, "Running...")
-    #text.pack()
-
 def callback_stop():
-    #text = Text(top, bd=5)
-    #text.insert(INSERT, "Stopped...")
-    #text.pack()
-
     stockTracker.stop()
     b_run.config(state=NORMAL)
-
-    print "Stopped..."
 
 b_run = Button(top, text="Run", command=callback_run)
 b_run.pack()
 b_stop = Button(top, text="Stop", command=callback_stop)
 b_stop.pack()
 
+top.protocol("WM_DELETE_WINDOW", onClose)
 top.mainloop()
-top.quit()
