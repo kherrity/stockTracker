@@ -59,8 +59,6 @@ def main(argv):
     pThres = ''
     stocks = ''
 
-    print "stopLoop: %d" % stopLoop
-
     try:
         opts, args = getopt.getopt(argv[1:], "hs:n:p:")
     except getopt.GetoptError:
@@ -72,7 +70,6 @@ def main(argv):
             sys.exit()
         elif opt == '-s':
             stocks = arg.replace(' ',',').split(',') ## eliminate whitespace
-            print stocks
             stocks = filter(None, stocks)
         elif opt == '-p':
             if arg:
@@ -108,7 +105,6 @@ def main(argv):
         D[s] = 0
 
     while not stopLoop:
-        print "stopLoop = %d" % stopLoop
         # Is the NYSE open?
         if isMarketClosed():
             if not marketCloseReported:
@@ -123,6 +119,7 @@ def main(argv):
                 print "MARKET OPEN!"
        
         message = ''
+        netgl = 0
         for stock in stocks:
             url = 'http://finance.yahoo.com/q?s=' + stock
             html_content = urllib2.urlopen(url).read()
@@ -135,6 +132,7 @@ def main(argv):
             stock_price = float(html_content[rb+1:lb])
 
             # compute net gain/loss for stock (if we own it)
+            gl = 0
             if stock in Dorig:
                 nshares = sum([n for (n,c) in Dorig[stock]])
                 gl = nshares * stock_price - sum([n*c for (n,c) in Dorig[stock]]) 
