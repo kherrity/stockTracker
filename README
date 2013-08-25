@@ -1,1 +1,14 @@
-This is a stock tracker application written in Python.
+Description:
+------------
+This is a (rudimentary) stock tracker application written in Python.
+You enter a comma separated list of stocks you're interested in tracking, your cell phone number, and a percentage increase threshold, 
+and you will be sent SMS text alerts on the hour if any of the stocks you listed rises above the threshold. 
+
+Notes:
+------
+If using py2exe to create an executable, in Windows, need to run:
+C:\Python27\python.exe setup.py py2exe
+
+If you run the executable (st_gui.exe), you'll likely get an exeption: pytz.UnknownTimeZoneError
+The __init__.py script needs to be modified slightly for pytz (C:\Python27\Lib\site-packages\pytz\__init__.py).
+See: http://comments.gmane.org/gmane.comp.python.py2exe/3258
